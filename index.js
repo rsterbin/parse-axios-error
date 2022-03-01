@@ -5,7 +5,7 @@ import axios from 'axios';
 
 const DefaultOptions = {
   throwOnNonAxios: false,
-  isReponseError: (data) => data.ok,
+  isReponseSuccess: (data) => data.ok,
   findErrorCode: (data) => data.code,
   findErrorMessage: (data) => data.message,
   findErrorContext: (data, context) => context,
