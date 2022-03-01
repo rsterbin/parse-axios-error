@@ -1,0 +1,33 @@
+{
+  "name": "@rsterbin/parse-axios-error",
+  "version": "1.0.0",
+  "description": "Personal use function for parsing axios errors",
+  "keywords": [
+    "axios",
+    "package",
+    "omnibus",
+    "personal"
+  ],
+  "homepage": "https://github.com/rsterbin/parse-axios-error",
+  "bugs": {
+    "url": "https://github.com/rsterbin/parse-axios-error/issues",
+    "email": "rsterbin@gmail.com"
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rsterbin/parse-axios-error.git"
+  },
+  "author": "Reha Sterbin <rsterbin@gmail.com>",
+  "license": "MIT",
+  "private": false,
+  "engines": {
+    "node": ">= 10.0.0"
+  },
+  "engineStrict": true,
+  "dependencies": {
+    "axios": "^0.21.1"
+  },
+  "devDependencies": {
+  }
+}
