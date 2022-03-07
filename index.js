@@ -1,4 +1,4 @@
-import axios from 'axios';
+const axios = require('axios');
 
 // The structure of the parseAxiosError function is based on this excellent
 // StackOverflow answer by Shubham Khatri: https://stackoverflow.com/a/44806462
@@ -13,21 +13,11 @@ const DefaultOptions = {
   scrubRequestData: (data) => data,
 };
 
-export const contextFromResponse = (response, opt = {}) => {
-  const options = { ...DefaultOptions, opt };
-  return = {
-    status: response.status,
-    message: null,
-    request_url: options.scrubRequestUrl(response.config.baseURL + response.config.url),
-    request_data: options.scrubRequestData(response.config.data)
-  };
-};
+const parseAxiosResponseForError = (response, opt = {}) => {
 
-export const parseAxiosResponseForError = (response, opt = {}) => {
+  const options = { ...DefaultOptions, ...opt };
 
-  const options = { ...DefaultOptions, opt };
-
-  const context: {
+  const context = {
     status: response.status,
     message: null,
     request_url: options.scrubRequestUrl(response.config.baseURL + response.config.url),
@@ -42,9 +32,9 @@ export const parseAxiosResponseForError = (response, opt = {}) => {
   }
 };
 
-export default const parseAxiosError = (error, opt = {}) => {
+const parseAxiosError = (error, opt = {}) => {
 
-  const options = { ...DefaultOptions, opt };
+  const options = { ...DefaultOptions, ...opt };
 
   if (!error.isAxiosError) {
     if (options.throwOnNonAxios) {
@@ -59,7 +49,6 @@ export default const parseAxiosError = (error, opt = {}) => {
     }
   }
 
-  let context = contextFromError(error, options);
   const info = error.toJSON();
   let context = {
     status: null,
@@ -72,7 +61,7 @@ export default const parseAxiosError = (error, opt = {}) => {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
     context.status = error.response.status;
-    context.request_url = config.request_url + options.scrubRequestUrl(error.response.config.url);
+    context.request_url = context.request_url + options.scrubRequestUrl(error.response.config.url);
     return {
       ok: false,
       code: options.findErrorCode(error.response.data),
@@ -103,4 +92,7 @@ export default const parseAxiosError = (error, opt = {}) => {
   }
 };
 
-export default parseAxiosError;
+module.exports = { parseAxiosError, parseAxiosResponseForError };
+
+// Allow use of default import syntax in TypeScript
+module.exports.default = parseAxiosError;

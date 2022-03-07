@@ -66,7 +66,7 @@ key | type | description
 key | type | default | description
 ----------------------------------
 `throwOnNonAxios` | boolean | `false` | if it's a non-axios error, throw an exception (otherwise returns code NON_AXIOS_ERROR)
-`isReponseError` | function | `(data) => data.ok` | if we have data from the server, return whether it's an error
+`isReponseSuccess` | function | `(data) => data.ok` | if we have data from the server, return whether it's an error
 `findErrorCode` | function | `(data) => data.code` | if we have data from the server, return an error code
 `findErrorMessage` | function | `(data) => data.message` | if we have data from the server, return an error message
 `findErrorContext` | function | `(data, context) => context` | if we have data from the server, take the json data and the context object we have so far and return a final version of the context object
