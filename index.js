@@ -5,30 +5,46 @@ const axios = require('axios');
 
 const DefaultOptions = {
   throwOnNonAxios: false,
-  isReponseSuccess: (data) => data.ok,
-  findErrorCode: (data) => data.code,
-  findErrorMessage: (data) => data.message,
+  wrapResponse: false,
+  isReponseSuccess: (data, context) => data?.ok === undefined ? context?.status === 200 : data.ok,
+  findErrorCode: (data, context) => data?.code || 'HTTP_STATUS_' + (context?.status || 'UNKNOWN'),
+  findErrorMessage: (data, context) => data?.message || context?.message || null,
   findErrorContext: (data, context) => context,
   scrubRequestUrl: (url) => url,
   scrubRequestData: (data) => data,
+  scrubResponseData: (data) => data
 };
 
 const parseAxiosResponseForError = (response, opt = {}) => {
 
   const options = { ...DefaultOptions, ...opt };
 
-  const context = {
-    status: response.status,
+  let url = null;
+  if (response?.config?.url && response?.config?.baseURL) {
+    url = response.config.baseURL + response.config.url;
+  } else if (response?.config?.url) {
+    url = response.config.url;
+  } else if (response?.config?.baseURL) {
+    url = response.config.baseURL;
+  }
+
+  let context = {
+    status: response?.status || 200,
+    code: null,
     message: null,
-    request_url: options.scrubRequestUrl(response.config.baseURL + response.config.url),
-    request_data: options.scrubRequestData(response.config.data)
+    request_url: options.scrubRequestUrl(url),
+    request_data: options.scrubRequestData(response?.config?.data || null),
+    response_data: options.scrubResponseData(response?.data || null),
   };
 
+  const ok = options.isReponseSuccess(response?.data, context);
+  context.error = ok ? null : response
+
   return {
-    ok: options.isReponseSuccess(response.data),
-    code: options.findErrorCode(response.data),
-    message: options.findErrorMessage(response.data),
-    context: options.findErrorContext(response.data, context)
+    ok: ok,
+    code: options.findErrorCode(response?.data, context),
+    message: options.findErrorMessage(response?.data, context),
+    context: options.findErrorContext(response?.data, context)
   }
 };
 
@@ -36,37 +52,65 @@ const parseAxiosError = (error, opt = {}) => {
 
   const options = { ...DefaultOptions, ...opt };
 
-  if (!error.isAxiosError) {
+  let context = {
+    code: null,
+    message: null,
+    status: null,
+    request_url: null,
+    request_data: null,
+    response_data: null,
+    error: error
+  };
+
+  if (typeof error != 'object' || (error === null) || !error.isAxiosError) {
     if (options.throwOnNonAxios) {
       throw error;
     } else {
+      let msg = null;
+      if (error?.message !== undefined) {
+        context.message = error.message;
+        if (typeof error?.message === 'string' || error?.message?.toString) {
+          msg = error.message;
+        }
+      }
+      if (error?.code !== undefined) {
+        context.code = error.code;
+      }
       return {
         ok: false,
         code: 'NON_AXIOS_ERROR',
-        message: error.message,
-        context: { error: error },
+        message: msg,
+        context: context,
       };
     }
   }
 
   const info = error.toJSON();
-  let context = {
-    status: null,
-    message: info.message,
-    request_url: options.scrubRequestUrl(info.config.baseURL),
-    request_data: options.scrubRequestData(info.config.data)
-  };
+  context.code = info.code;
+  context.message = info.message;
+  if (info?.config?.baseURL !== undefined) {
+    context.request_url = options.scrubRequestUrl(info.config.baseURL);
+  }
+  if (info?.config?.data !== undefined) {
+    context.request_data = options.scrubRequestData(info.config.data);
+  }
 
   if (error.response) {
     // The request was made and the server responded with a status code
     // that falls out of the range of 2xx
     context.status = error.response.status;
-    context.request_url = context.request_url + options.scrubRequestUrl(error.response.config.url);
+    if (error.response?.config?.url !== undefined) {
+      const resUrl = error.response.config.url;
+      context.request_url = info?.config?.baseURL ? options.scrubRequestUrl(info.config.baseURL + resUrl) : options.scrubRequestUrl(resUrl);
+    }
+    if (error.response?.data !== undefined) {
+      context.response_data = options.scrubResponseData(error.response.data);
+    }
     return {
       ok: false,
-      code: options.findErrorCode(error.response.data),
-      message: options.findErrorMessage(error.response.data),
-      context: options.findErrorContext(error.response.data, context)
+      code: options.findErrorCode(context.response_data, context),
+      message: options.findErrorMessage(context.response_data, context),
+      context: options.findErrorContext(context.response_data, context)
     };
 
   } else if (error.request) {
@@ -85,7 +129,7 @@ const parseAxiosError = (error, opt = {}) => {
     return {
       ok: false,
       code: 'UNKNOWN',
-      message: error.message,
+      message: error?.message || null,
       context: context
     };
 

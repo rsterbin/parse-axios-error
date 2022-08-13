@@ -48,28 +48,34 @@ with async/await:
 key | type | description
 -------------------------
 `ok` | boolean | whether this is a success (true) or error (false)
-`code` | string | the error code (can be NON_AXIOS_ERROR, NETWORK_FAILURE, UNKNOWN, along with any other codes defined by your app)
+`code` | string | the error code (can be NON_AXIOS_ERROR, HTTP_STATUS_*, NETWORK_FAILURE, UNKNOWN, or other codes as defined by your app)
+`message` | string | the error message
 `context` | object | contextual information about the request/response (see below)
 
 ### Context
 
+If your application would benefit from further context, you can add it via the `findErrorContext` option.
+
 key | type | description
 -------------------------
-`error` | Error | if code is NON_AXIOS_ERROR, the error found during processing
-`message` | string | the error message Axios reported
+`code` | string | the original error code, from Axios or elsewhere
+`message` | string | the original error message, from Axios or elsewhere
 `status` | int | the HTTP status, if present
 `request_url` | string | the URL for the request
 `request_data` | object | any json data passed in the request
+`response_data` | object | any json data returned in the response
+`error` | Error | the original error
 
 ## Options
 
 key | type | default | description
 ----------------------------------
 `throwOnNonAxios` | boolean | `false` | if it's a non-axios error, throw an exception (otherwise returns code NON_AXIOS_ERROR)
-`isReponseSuccess` | function | `(data) => data.ok` | if we have data from the server, return whether it's an error
-`findErrorCode` | function | `(data) => data.code` | if we have data from the server, return an error code
-`findErrorMessage` | function | `(data) => data.message` | if we have data from the server, return an error message
+`isReponseSuccess` | function | `(data, context) => data?.ok === undefined ? context.status === 200 : data.ok` | if we have data from the server, return whether it's an error
+`findErrorCode` | function | `(data, context) => data?.code || 'HTTP_STATUS_' + context.status` | if we have data from the server, return an error code
+`findErrorMessage` | function | `(data, context) => data?.message || context.message` | if we have data from the server, return an error message
 `findErrorContext` | function | `(data, context) => context` | if we have data from the server, take the json data and the context object we have so far and return a final version of the context object
-`scrubRequestUrl` | function | `(url) => url` | scrub any private data from the request URL before returning as context
-`scrubRequestData` | function | `(data) => data` | scrub any private data from the request data json before returning as context
+`scrubRequestUrl` | function | `(url) => url` | scrub any private data from the request URL before returning for context
+`scrubRequestData` | function | `(data) => data` | scrub any private data from the request data json before returning for context
+`scrubResponseData` | function | `(data) => data` | scrub any private data from the response data json before returning for context
 
